@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HUB Key System | RetroFuturism</title>
+    <style>
+        /* --- МЕГА CSS НАЧИНАЕТСЯ ТУТ --- */
+        
+        /* Импортируем крутой футуристичный шрифт */
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto+Mono&display=swap');
+
+        :root {
+            --main-color: #00ff88; /* Неоновый зеленый */
+            --bg-color: #050505;   /* Почти черный */
+            --glow: 0 0 10px rgba(0, 255, 136, 0.7), 0 0 20px rgba(0, 255, 136, 0.5);
+            --text-glow: 0 0 5px rgba(0, 255, 136, 1);
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden; /* Чтобы не было полос прокрутки из-за матрицы */
+            background-color: var(--bg-color);
+            font-family: 'Roboto Mono', monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+        }
+
+        /* --- Эффект Матрицы на фоне --- */
+        #matrix-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1; /* Фон */
+            opacity: 0.15; /* Делаем его тусклым, чтобы не мешал тексту */
+        }
+
+        /* --- Основной контейнер --- */
+        .main-container {
+            position: relative;
+            z-index: 10; /* Поверх фона */
+            background: rgba(10, 10, 10, 0.85); /* Полупрозрачный фон */
+            padding: 40px;
+            border-radius: 15px;
+            border: 2px solid var(--main-color);
+            box-shadow: var(--glow), inset 0 0 15px rgba(0, 255, 136, 0.3);
+            text-align: center;
+            backdrop-filter: blur(5px); /* Размытие фона за контейнером */
+            width: 90%;
+            max-width: 450px;
+        }
+
+        h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.5em;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            color: var(--main-color);
+            text-shadow: var(--text-glow);
+            margin-bottom: 10px;
+        }
+
+        p {
+            color: #888;
+            margin-bottom: 30px;
+            font-size: 0.9em;
+        }
+
+        /* --- Зона отображения ключа --- */
+        .key-display-area {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid #333;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Эффект сканирующей линии внутри блока ключа */
+        .key-display-area::after {
+            content: "";
+            position: absolute;
+            top: -100%;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(0deg, transparent, rgba(0, 255, 136, 0.05), transparent);
+            animation: scan 3s linear infinite;
+        }
+
+        @keyframes scan {
+            0% { top: -100%; }
+            100% { top: 100%; }
+        }
+
+        h2#keyDisplay {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.2em;
+            color: #fff;
+            margin: 0;
+            letter-spacing: 1px;
+            word-break: break-all; /* Чтобы длинный ключ не вылезал */
+        }
+
+        h2#keyDisplay.generated {
+            color: var(--main-color);
+            text-shadow: var(--text-glow);
+            animation: flicker 0.5s infinite alternate;
+        }
+
+        /* Эффект мерцания для готового ключа */
+        @keyframes flicker {
+            0% { opacity: 0.9; text-shadow: var(--text-glow); }
+            100% { opacity: 1; text-shadow: 0 0 15px rgba(0, 255, 136, 1), 0 0 25px rgba(0, 255, 136, 0.8); }
+        }
+
+        /* --- КРУТАЯ НЕОНОВАЯ КНОПКА --- */
+        .btn-get-key {
+            background: transparent;
+            border: 2px solid var(--main-color);
+            color: var(--main-color);
+            padding: 15px 30px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.1em;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            outline: none;
+        }
+
+        /* Эффект при наведении */
+        .btn-get-key:hover {
+            background: var(--main-color);
+            color: var(--bg-color);
+            box-shadow: var(--glow);
+            text-shadow: none;
+        }
+
+        /* Активное состояние (клик) */
+        .btn-get-key:active {
+            transform: scale(0.95);
+            box-shadow: 0 0 5px rgba(0, 255, 136, 0.7);
+        }
+
+        /* --- МЕГА CSS ЗАКОНЧИЛСЯ ТУТ --- */
+    </style>
+</head>
+<body>
+
+    <canvas id="matrix-canvas"></canvas>
+
+    <div class="main-container">
+        <h1>ACCESS</h1>
+        <p>Нажми кнопку, чтобы сгенерировать ключ доступа</p>
+        
+        <div class="key-display-area">
+            <h2 id="keyDisplay">ОЖИДАНИЕ...</h2>
+        </div>
+
+        <button class="btn-get-key" onclick="generateKey()">Получить Ключ</button>
+    </div>
+
+    <script>
+        // --- Скрипт Матрицы ---
+        const canvas = document.getElementById('matrix-canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Устанавливаем размер холста по размеру окна
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        // Символы (японские и латиница)
+        const katakana = 'アァカサタナハマヤャラワガザダバパイィキシチニヒミリヰギジヂビピウゥクスツヌフムユュルグズブヅプエェケセテネヘメレヱゲゼデベペオォコソトノホモヨョロヲゴゾドボポヴッン';
+        const latin = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        const alphabet = katakana + latin;
+
+        const fontSize = 16;
+        const columns = canvas.width / fontSize; // Количество колонок
+
+        // Массив для хранения текущей Y-позиции для каждой колонки
+        const drops = [];
+        for (let x = 0; x < columns; x++) {
+            drops[x] = 1; // Все начинают сверху
+        }
+
+        function drawMatrix() {
+            // Полупрозрачный черный фон для создания эффекта "следа"
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.fillStyle = '#0F0'; // Цвет символов матрицы
+            ctx.font = fontSize + 'px monospace';
+
+            for (let i = 0; i < drops.length; i++) {
+                // Берем случайный символ
+                const text = alphabet.charAt(Math.floor(Math.random() * alphabet.length));
+                
+                // Рисуем символ
+                ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+
+                // Если символ дошел до низа, сбрасываем его наверх со случайной задержкой
+                if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                    drops[i] = 0;
+                }
+
+                // Двигаем каплю вниз
+                drops[i]++;
+            }
+        }
+
+        // Запускаем анимацию матрицы
+        setInterval(drawMatrix, 30);
+
+        // Обновляем размер холста при изменении размера окна
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+
+        // --- Функция генерации ключа ---
+        function generateKey() {
+            const display = document.getElementById('keyDisplay');
+            
+            // ВАЖНО: Ключ должен быть ОДНИМ из тех, что ты прописал в keys.txt на GitHub!
+            const realKey = "SECRET_KEY_123"; 
+
+            display.innerText = realKey;
+            display.classList.add('generated'); // Добавляем класс для включения эффектов
+
+            alert("Ключ получен! Скопируй его в экзекутор: " + realKey);
+        }
+    </script>
+</body>
+</html>
